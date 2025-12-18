@@ -36,7 +36,9 @@ module.exports = async function(context) {
 
     // 2. Data Extraction
     // Note: Appwrite handles JSON parsing automatically for req.body
-    const { message, userId, history = [] } = req.body;
+    const { message,
+      //  userId,
+       history = [] } = req.body;
 
     if (!message) {
       return res.json({ error: "Message is required" }, 400);
@@ -44,9 +46,9 @@ module.exports = async function(context) {
 
     // 3. Groq AI logic
     const messages = [
-      { role: "system", content: process.env.BOT_KNOWLEDGE || "You are a helpful assistant." },
-      ...history.slice(-6),
-      { role: "user", content: message }
+      { type: "bot", text: process.env.BOT_KNOWLEDGE || "You are a helpful horizon club assistant." },
+      ...history,
+      { type: "user", text: message }
     ];
 
     const completion = await groq.chat.completions.create({
