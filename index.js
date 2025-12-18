@@ -36,19 +36,24 @@ module.exports = async function(context) {
 
     // 2. Data Extraction
     // Note: Appwrite handles JSON parsing automatically for req.body
-    const { message,
-      //  userId,
-       history = [] } = req.body;
+    const { message, history = [] } = req.body;
 
     if (!message) {
       return res.json({ error: "Message is required" }, 400);
     }
 
-    // 3. Groq AI logic
+    // 3. Groq AI logic - MAP YOUR FRONTEND DATA TO GROQ FORMAT
     const messages = [
-      { type: "bot", text: process.env.BOT_KNOWLEDGE || "You are a helpful horizon club assistant." },
-      ...history,
-      { type: "user", text: message }
+      { 
+        role: "system", 
+        content: process.env.BOT_KNOWLEDGE || "You are a helpful horizon club assistant." 
+      },
+      // Transform history: change 'type' to 'role' and 'text' to 'content'
+      ...history.map((msg) => ({
+        role: msg.type === "user" ? "user" : "assistant",
+        content: msg.text,
+      })),
+      { role: "user", content: message }
     ];
 
     const completion = await groq.chat.completions.create({
