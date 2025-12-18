@@ -4,46 +4,28 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
-function validateToken(req) {
-  const authHeader =
-    req.headers.authorization || req.headers.Authorization;
-
-  if (!authHeader) {
-    return { ok: false, error: "Missing Authorization header" };
-  }
+function validateToken(headers) {
+  const authHeader = headers["authorization"] || headers["Authorization"];
+  if (!authHeader) return { ok: false, error: "Missing Authorization header" };
 
   const parts = authHeader.split(" ");
-  if (parts.length !== 2 || parts[0] !== "Bearer") {
-    return { ok: false, error: "Invalid Authorization format" };
-  }
+  if (parts.length !== 2 || parts[0] !== "Bearer") return { ok: false, error: "Invalid Authorization format" };
 
-  if (parts[1] !== process.env.CHATBOT_TOKEN) {
-    return { ok: false, error: "Unauthorized" };
-  }
+  if (parts[1] !== process.env.CHATBOT_TOKEN) return { ok: false, error: "Unauthorized" };
 
   return { ok: true };
 }
 
-module.exports = async function(req, res) {
+module.exports = async function({ headers, body }) {
   try {
-    const validation = validateToken(req);
+    const validation = validateToken(headers);
     if (!validation.ok) {
-      res.writeHead(401, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ error: validation.error }));
+      return { status: 401, error: validation.error };
     }
 
-    if (req.method !== "POST") {
-      res.writeHead(405, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ error: "Method not allowed" }));
-    }
+    const { message, history = [] } = JSON.parse(body || "{}");
 
-    const body = JSON.parse(req.body || "{}");
-    const { message, history = [] } = body;
-
-    if (!message) {
-      res.writeHead(400, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ error: "Message is required" }));
-    }
+    if (!message) return { status: 400, error: "Message is required" };
 
     const messages = [
       { role: "system", content: process.env.BOT_KNOWLEDGE },
@@ -58,12 +40,10 @@ module.exports = async function(req, res) {
 
     const reply = completion.choices[0]?.message?.content || "";
 
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ reply }));
+    return { status: 200, reply };
 
   } catch (err) {
-    console.error("Function error:", err);  // logs appear in Appwrite console
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Internal server error" }));
+    console.error("Function error:", err);
+    return { status: 500, error: "Internal server error" };
   }
 };
