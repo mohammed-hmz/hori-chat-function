@@ -5,8 +5,8 @@ const groq = new Groq({
 });
 
 function validateToken(req) {
-  const headers = req.headers || {}; // fallback if undefined
-  const authHeader = headers.authorization || headers.Authorization;
+  // Appwrite headers are normalized to lowercase
+  const authHeader = req.headers['authorization'];
 
   if (!authHeader) {
     return { ok: false, error: "Missing Authorization header" };
@@ -24,34 +24,46 @@ function validateToken(req) {
   return { ok: true };
 }
 
-module.exports = async function({ headers, body }) {
+module.exports = async function(context) {
+  const { req, res, error } = context;
+
   try {
-    const validation = validateToken(headers);
+    // 1. Validation
+    const validation = validateToken(req);
     if (!validation.ok) {
-      return { status: 401, error: validation.error };
+      return res.json({ error: validation.error }, 401);
     }
 
-    const { message, history = [] } = JSON.parse(body || "{}");
+    // 2. Data Extraction
+    // Note: Appwrite handles JSON parsing automatically for req.body
+    const { message, userId, history = [] } = req.body;
 
-    if (!message) return { status: 400, error: "Message is required" };
+    if (!message) {
+      return res.json({ error: "Message is required" }, 400);
+    }
 
+    // 3. Groq AI logic
     const messages = [
-      { role: "system", content: process.env.BOT_KNOWLEDGE },
+      { role: "system", content: process.env.BOT_KNOWLEDGE || "You are a helpful assistant." },
       ...history.slice(-6),
       { role: "user", content: message }
     ];
 
     const completion = await groq.chat.completions.create({
-      model: process.env.MODEL_NAME,
+      model: process.env.MODEL_NAME || "llama3-8b-8192",
       messages
     });
 
     const reply = completion.choices[0]?.message?.content || "";
 
-    return { status: 200, reply };
+    // 4. Send response back to Next.js
+    return res.json({ reply }, 200);
 
   } catch (err) {
-    console.error("Function error:", err);
-    return { status: 500, error: "Internal server error" };
+    error("Detailed Error: " + err.stack);
+    return res.json({ 
+      error: "Internal server error", 
+      message: err.message 
+    }, 500);
   }
 };
