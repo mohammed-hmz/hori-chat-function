@@ -4,14 +4,22 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
-function validateToken(headers) {
-  const authHeader = headers["authorization"] || headers["Authorization"];
-  if (!authHeader) return { ok: false, error: "Missing Authorization header" };
+function validateToken(req) {
+  const headers = req.headers || {}; // fallback if undefined
+  const authHeader = headers.authorization || headers.Authorization;
+
+  if (!authHeader) {
+    return { ok: false, error: "Missing Authorization header" };
+  }
 
   const parts = authHeader.split(" ");
-  if (parts.length !== 2 || parts[0] !== "Bearer") return { ok: false, error: "Invalid Authorization format" };
+  if (parts.length !== 2 || parts[0] !== "Bearer") {
+    return { ok: false, error: "Invalid Authorization format" };
+  }
 
-  if (parts[1] !== process.env.CHATBOT_TOKEN) return { ok: false, error: "Unauthorized" };
+  if (parts[1] !== process.env.CHATBOT_TOKEN) {
+    return { ok: false, error: "Unauthorized" };
+  }
 
   return { ok: true };
 }
