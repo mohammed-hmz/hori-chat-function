@@ -24,28 +24,30 @@ function validateToken(req) {
   return { ok: true };
 }
 
-export default async ({ req, res }) => {
+module.exports = async function(req, res) {
   try {
-    // 🔐 Validate token
     const validation = validateToken(req);
     if (!validation.ok) {
-      return res.json({ error: validation.error }, 401);
+      res.writeHead(401, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: validation.error }));
     }
 
     if (req.method !== "POST") {
-      return res.json({ error: "Method not allowed" }, 405);
+      res.writeHead(405, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Method not allowed" }));
     }
 
     const body = JSON.parse(req.body || "{}");
     const { message, history = [] } = body;
 
     if (!message) {
-      return res.json({ error: "Message is required" }, 400);
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Message is required" }));
     }
 
     const messages = [
       { role: "system", content: process.env.BOT_KNOWLEDGE },
-      ...history.slice(-6), // keep memory short
+      ...history.slice(-6),
       { role: "user", content: message }
     ];
 
@@ -54,12 +56,14 @@ export default async ({ req, res }) => {
       messages
     });
 
-    const reply =
-      completion.choices[0]?.message?.content || "";
+    const reply = completion.choices[0]?.message?.content || "";
 
-    return res.json({ reply });
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ reply }));
 
   } catch (err) {
-    return res.json({ error: "Internal server error" }, 500);
+    console.error("Function error:", err);  // logs appear in Appwrite console
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Internal server error" }));
   }
 };
