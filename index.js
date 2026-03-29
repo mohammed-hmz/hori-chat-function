@@ -12,9 +12,16 @@ try {
   const configPath = path.join(__dirname, "horizon_chatbot_config.json");
   const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 
-  // Build a single system prompt string from the config
   BOT_KNOWLEDGE = [
     config.SYSTEM_PROMPT,
+    "",
+    "## RESPONSE RULES",
+    "- Keep every reply short: 1–3 sentences for simple questions, 5–6 lines max for lists.",
+    "- Never repeat information already given in the conversation.",
+    "- No filler phrases like 'Great question!', 'Sure!', 'Of course!', or 'Let me know if you need anything else.'",
+    "- If the answer is a list, use at most 5 bullet points.",
+    "- Answer directly. No preamble.",
+    "- LINKS: Always write full URLs starting with https:// (e.g. https://horizonclub.dev/join). Never write bare domains without https://.",
     "",
     config.BOT_KNOWLEDGE,
     "",
@@ -63,7 +70,6 @@ module.exports = async function (context) {
         role: "system",
         content: BOT_KNOWLEDGE,
       },
-      // Transform history: change 'type' to 'role' and 'text' to 'content'
       ...history.map((msg) => ({
         role: msg.type === "user" ? "user" : "assistant",
         content: msg.text,
@@ -74,11 +80,12 @@ module.exports = async function (context) {
     const completion = await groq.chat.completions.create({
       model: process.env.MODEL_NAME || "llama3-8b-8192",
       messages,
+      max_tokens: 300,
     });
 
     const reply = completion.choices[0]?.message?.content || "";
 
-    // 4. Send response back to Next.js
+    // 4. Send response
     return res.json({ reply }, 200);
   } catch (err) {
     error("Detailed Error: " + err.stack);
