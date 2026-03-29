@@ -1,32 +1,49 @@
 const { Groq } = require("groq-sdk");
+const fs = require("fs");
+const path = require("path");
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
-function validateToken(req) {
-  // Appwrite headers are normalized to lowercase
-  const authHeader = req.headers['authorization'];
+// Load bot knowledge from the JSON config file once at startup
+let BOT_KNOWLEDGE = "You are a helpful Horizon Club assistant."; // fallback
+try {
+  const configPath = path.join(__dirname, "horizon_chatbot_config.json");
+  const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 
+  // Build a single system prompt string from the config
+  BOT_KNOWLEDGE = [
+    config.SYSTEM_PROMPT,
+    "",
+    config.BOT_KNOWLEDGE,
+    "",
+    "## Q&A PAIRS",
+    config.QA_PAIRS.map(
+      (qa) => `Q: ${qa.question}\nA: ${qa.answer}`
+    ).join("\n\n"),
+  ].join("\n");
+} catch (e) {
+  console.error("Failed to load horizon_chatbot_config.json:", e.message);
+}
+
+function validateToken(req) {
+  const authHeader = req.headers["authorization"];
   if (!authHeader) {
     return { ok: false, error: "Missing Authorization header" };
   }
-
   const parts = authHeader.split(" ");
   if (parts.length !== 2 || parts[0] !== "Bearer") {
     return { ok: false, error: "Invalid Authorization format" };
   }
-
   if (parts[1] !== process.env.CHATBOT_TOKEN) {
     return { ok: false, error: "Unauthorized" };
   }
-
   return { ok: true };
 }
 
-module.exports = async function(context) {
+module.exports = async function (context) {
   const { req, res, error } = context;
-
   try {
     // 1. Validation
     const validation = validateToken(req);
@@ -35,42 +52,39 @@ module.exports = async function(context) {
     }
 
     // 2. Data Extraction
-    // Note: Appwrite handles JSON parsing automatically for req.body
     const { message, history = [] } = req.body;
-
     if (!message) {
       return res.json({ error: "Message is required" }, 400);
     }
 
-    // 3. Groq AI logic - MAP YOUR FRONTEND DATA TO GROQ FORMAT
+    // 3. Groq AI logic
     const messages = [
-      { 
-        role: "system", 
-        content: process.env.BOT_KNOWLEDGE || "You are a helpful horizon club assistant." 
+      {
+        role: "system",
+        content: BOT_KNOWLEDGE,
       },
       // Transform history: change 'type' to 'role' and 'text' to 'content'
       ...history.map((msg) => ({
         role: msg.type === "user" ? "user" : "assistant",
         content: msg.text,
       })),
-      { role: "user", content: message }
+      { role: "user", content: message },
     ];
 
     const completion = await groq.chat.completions.create({
       model: process.env.MODEL_NAME || "llama3-8b-8192",
-      messages
+      messages,
     });
 
     const reply = completion.choices[0]?.message?.content || "";
 
     // 4. Send response back to Next.js
     return res.json({ reply }, 200);
-
   } catch (err) {
     error("Detailed Error: " + err.stack);
-    return res.json({ 
-      error: "Internal server error", 
-      message: err.message 
+    return res.json({
+      error: "Internal server error",
+      message: err.message,
     }, 500);
   }
 };
