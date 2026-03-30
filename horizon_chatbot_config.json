@@ -168,6 +168,7 @@
     "technical_support_email": "hamzamohammed.it@gmail.com",
     "emoji_use": "Light and contextual — adds personality without being overwhelming",
     "always_include_links": true,
+    "emojis":[true,"eg:🔥, 🚀, ✨,..."],
     "response_style": "Concise and welcoming"
   }
 }
