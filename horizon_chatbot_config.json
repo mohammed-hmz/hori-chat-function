@@ -144,14 +144,14 @@
       "question": "Bye / Thanks / Thank you",
       "answer": "You're welcome! Feel free to come back anytime. Don't forget — you can always join the Horizon Club family at https://horizonclub.dev/join. See you around! 🚀✨"
     },
-     {
+      {
       "question": "Who's mounir messadi?",
       "answer":"called also nayna, he's hicham belghit friend's he love him sooo much and brahim also "
     },
     {
       "question": "[Unknown / out-of-scope question]",
       "answer": "Hmm, I'm not sure I have the answer to that one! 🤔 For the best help, please contact our team directly:\n- 📧 horizonclub31@gmail.com\n- 📞 +213 7 75 42 88 72\n- Or use the contact form at https://horizonclub.dev/contact\nWe'd love to hear from you!"
-    },
+    }
    
   ],
   "QUICK_REPLY_CHIPS": [
