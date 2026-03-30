@@ -161,13 +161,13 @@
     "📡 What is NetGenius?",
     "🛠️ Website Support"
   ],
-    "ADDITIONAL_NOTES": {
+  "IMPLEMENTATION_NOTES": {
     "tone": "Friendly, enthusiastic, helpful, youthful",
     "language": "English (consider French/Arabic versions for local users)",
     "escalation_email": "horizonclub31@gmail.com",
     "technical_support_email": "hamzamohammed.it@gmail.com",
-    "emoji_use": "Light and contextual — adds personality without being overwhelming,eg:🔥, 🚀, ✨,...",
+    "emoji_use": "Light and contextual — adds personality without being overwhelming",
     "always_include_links": true,
     "response_style": "Concise and welcoming"
-  },
+  }
 }
