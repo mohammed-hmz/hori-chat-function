@@ -69,7 +69,7 @@ module.exports = async function (context) {
       model: process.env.MODEL_NAME || "llama3-8b-8192",
       messages,
       max_tokens: 300,
-      temperature: 0.3, // lower = faster + more factual, less creative rambling
+      temperature: 0.5, // lower = faster + more factual, less creative rambling
     });
 
     const reply = completion.choices[0]?.message?.content || "";
